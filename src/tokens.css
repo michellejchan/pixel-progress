@@ -1,0 +1,55 @@
+:root {
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-mono: 'IBM Plex Mono', monospace;
+  --leading: 1.15;
+
+  --text-2xs: 9px;   /* metadata labels */
+  --text-xs:  12px;  /* secondary captions */
+  --text-sm:  13px;  /* ui labels, stats, legend */
+  --text-base: 16px; /* body, inputs, headings */
+
+  /* ── Color: backgrounds ─────────────────────────────────────────────────── */
+  --color-bg:      #1b1b1b;
+  --color-surface: #1b1c1b;
+  --color-nav:     #151515;
+
+  /* ── Color: borders ─────────────────────────────────────────────────────── */
+  --color-border:       #2e2e2e;
+  --color-border-nav:   #2f2f2f;
+  --color-border-warm:  #786d6d;
+  --color-border-field: rgba(255, 255, 255, 0.2);
+  --color-border-grid:  #8c8787;
+  --color-divider:      rgba(255, 255, 255, 0.12);
+
+  /* ── Color: text ────────────────────────────────────────────────────────── */
+  --color-text:       #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.6);
+  --color-text-dim:   rgba(255, 255, 255, 0.75);
+  --color-text-warm:  #e3dcdc;
+  --color-text-warm-muted: rgba(227, 220, 220, 0.75);
+  --color-text-on-surface: #f9f9f9;
+
+  /* ── Color: accent ──────────────────────────────────────────────────────── */
+  --color-accent:             #8aa4f7;
+  --color-accent-border:      #a7bbf9;
+  --color-accent-hover:       #9ab3f8;
+  --color-accent-thumb:       #859eef;
+  --color-accent-bg:          rgba(138, 164, 247, 0.04);
+  --color-accent-bg-active:   rgba(138, 164, 247, 0.08);
+  --color-accent-border-soft: rgba(138, 164, 247, 0.5);
+  --color-accent-dim:         rgba(138, 164, 247, 0.2);
+
+  /* ── Color: interactive ─────────────────────────────────────────────────── */
+  --color-toggle-track: #3c3c3c;
+
+  /* ── Color: error ───────────────────────────────────────────────────────── */
+  --color-error:        #ff6b6b;
+  --color-error-bg:     rgba(198, 40, 40, 0.12);
+  --color-error-border: rgba(198, 40, 40, 0.35);
+
+  /* ── Layout ─────────────────────────────────────────────────────────────── */
+  --nav-height:       57px;
+  --nav-padding-x:    59px;
+  --layout-width:     750px;
+  --panel-left-width: 315px;
+}

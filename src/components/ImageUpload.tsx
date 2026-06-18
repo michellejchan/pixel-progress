@@ -36,9 +36,15 @@ export function ImageUpload({ onImage, disabled }: Props) {
         style={{ display: "none" }}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      <div className="upload-icon">🖼</div>
-      <p>Drop an image here or click to upload</p>
-      <p className="upload-hint">JPG, PNG, WEBP, HEIC supported</p>
+      <svg className="upload-diamond" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 2L22 12L12 22L2 12Z" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+      <div className="upload-text-group">
+        <p className="upload-primary">Drag image here</p>
+        <p className="upload-secondary">or click to browse</p>
+      </div>
     </div>
   );
 }

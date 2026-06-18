@@ -33,20 +33,18 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
         ctx.fillStyle = pc.finalHex;
         ctx.fillRect(x, y, cellPx, cellPx);
       } else {
-        // light tint background
-        ctx.fillStyle = mixWithWhite(pc.finalHex, 0.25);
+        ctx.fillStyle = mixWithDark(pc.finalHex, 0.35);
         ctx.fillRect(x, y, cellPx, cellPx);
-        // code number
         const fontSize = Math.max(7, Math.min(14, cellPx * 0.45));
-        ctx.font = `bold ${fontSize}px sans-serif`;
-        ctx.fillStyle = "#222";
+        ctx.font = `bold ${fontSize}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(cell.colorCode), x + cellPx / 2, y + cellPx / 2);
       }
 
       // Grid lines
-      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.strokeStyle = "rgba(140,135,135,0.35)";
       ctx.lineWidth = 0.5;
       ctx.strokeRect(x, y, cellPx, cellPx);
     }
@@ -63,12 +61,12 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
   );
 }
 
-function mixWithWhite(hex: string, amount: number): string {
+function mixWithDark(hex: string, amount: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  const mr = Math.round(r * amount + 255 * (1 - amount));
-  const mg = Math.round(g * amount + 255 * (1 - amount));
-  const mb = Math.round(b * amount + 255 * (1 - amount));
+  const mr = Math.round(r * amount + 27 * (1 - amount));
+  const mg = Math.round(g * amount + 27 * (1 - amount));
+  const mb = Math.round(b * amount + 27 * (1 - amount));
   return `rgb(${mr},${mg},${mb})`;
 }
