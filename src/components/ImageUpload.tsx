@@ -36,14 +36,14 @@ export function ImageUpload({ onImage, disabled }: Props) {
         style={{ display: "none" }}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      <svg className="upload-diamond" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 2L22 12L12 22L2 12Z" />
-        <line x1="12" y1="8" x2="12" y2="16" />
-        <line x1="8" y1="12" x2="16" y2="12" />
-      </svg>
+      <div className="upload-icon-wrapper">
+        <svg className="upload-icon" viewBox="0 -960 960 960" fill="currentColor">
+          <path d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+        </svg>
+      </div>
       <div className="upload-text-group">
-        <p className="upload-primary">Drag image here</p>
-        <p className="upload-secondary">or click to browse</p>
+        <p className="upload-primary"> Choose a file or drag and drop</p>
+        <p className="upload-secondary">PNG or JPG; max 500MB</p>
       </div>
     </div>
   );

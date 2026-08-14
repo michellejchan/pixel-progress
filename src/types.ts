@@ -1,11 +1,11 @@
 // Difficulty level → palette size (scales with grid to balance fidelity vs. legend legibility)
 export const DIFFICULTY_PALETTE_SIZE: Record<number, number> = {
   1: 6,
-  2: 8,
-  3: 8,
+  2: 9,
+  3: 9,
   4: 12,
-  5: 14,
-  6: 16,
+  5: 15,
+  6: 18,
   7: 18,
 };
 
@@ -55,7 +55,7 @@ export interface ReferenceImage {
 export interface ColorPalette {
   id: string;
   projectId: string;
-  paletteSize: number; // scales with difficulty: 6/8/8/12/14/16/18
+  paletteSize: number; // scales with difficulty: 6/9/9/12/15/18/18
   createdAt: string;
   harmonyPassApplied: boolean;
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ImageUpload } from "./components/ImageUpload";
 import { DifficultySlider } from "./components/DifficultySlider";
 import { PixelGrid } from "./components/PixelGrid";
@@ -7,9 +7,9 @@ import { runPipeline, loadImageDataUrl } from "./lib/pipeline";
 import { generatePdf } from "./lib/pdf";
 import { DIFFICULTY_GRID } from "./types";
 import type { PaletteColor, PixelCell, PixelGrid as GridType } from "./types";
+import emptyStateImg from "./assets/pixel_drink-removebg-preview.png";
 import "./App.css";
 
-type ViewMode = "color" | "code";
 type AppPhase = "idle" | "processing" | "ready";
 
 const DIFFICULTY_TIME: Record<number, string> = {
@@ -34,7 +34,6 @@ export default function App() {
   const [paletteColors, setPaletteColors] = useState<PaletteColor[]>([]);
   const [cells, setCells] = useState<PixelCell[]>([]);
   const [grid, setGrid] = useState<GridType | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("color");
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -108,7 +107,20 @@ export default function App() {
 
   const n = grid ? grid.n : DIFFICULTY_GRID[difficulty];
   const total = n * n;
-  const gridSize = Math.min(356, Math.max(200, n * 28));
+
+  const gridSectionRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState(360);
+
+  useEffect(() => {
+    const el = gridSectionRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width;
+      if (w > 0) setCanvasSize(Math.floor(w));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <div className="app">
@@ -121,11 +133,18 @@ export default function App() {
 
       <div className="app-body">
         <div className="panels">
+          <span className="panel-noise" aria-hidden="true" />
           <aside className="panel-left">
+            <span className="panel-noise" aria-hidden="true" />
             <div className="form-section">
               <p className="section-heading">
-                {"[] "}<span className="htxt">logistics</span>
+                {"> "}<span className="htxt">logistics</span>
               </p>
+
+              <div className="field">
+                <span className="field-label">reference</span>
+                <ImageUpload onImage={handleImage} disabled={phase === "processing"} />
+              </div>
 
               <div className="field">
                 <span className="field-label">title</span>
@@ -142,16 +161,6 @@ export default function App() {
                 <div className="field-value">{today}</div>
               </div>
 
-              <div className="field">
-                <span className="field-label">reference</span>
-                <ImageUpload onImage={handleImage} disabled={phase === "processing"} />
-              </div>
-            </div>
-
-            <div className="form-section">
-              <p className="section-heading">
-                {"[] "}<span className="htxt">difficulty</span>
-              </p>
               <DifficultySlider
                 value={difficulty}
                 onChange={handleDifficultyChange}
@@ -164,28 +173,12 @@ export default function App() {
               onClick={handleGeneratePdf}
               disabled={phase !== "ready"}
             >
-              Generate Print
+              Preview
             </button>
           </aside>
 
           <div className="panel-right">
-            <div className="grid-section">
-              <div className="grid-header">
-                <p className="section-heading">
-                  {"[] "}<span className="htxt">grid</span>
-                </p>
-                <div className="view-toggle-wrap">
-                  <button
-                    className={`toggle-track ${viewMode === "color" ? "on" : ""}`}
-                    onClick={() => setViewMode(v => v === "color" ? "code" : "color")}
-                    aria-label="Toggle color view"
-                  >
-                    <div className="toggle-thumb" />
-                  </button>
-                  <span className="toggle-label">View color</span>
-                </div>
-              </div>
-
+            <div className="grid-section" ref={gridSectionRef}>
               {error && <div className="error-banner">{error}</div>}
 
               {phase === "ready" && grid ? (
@@ -194,8 +187,8 @@ export default function App() {
                     n={grid.n}
                     cells={cells}
                     paletteColors={paletteColors}
-                    view={viewMode}
-                    size={gridSize}
+                    view="color"
+                    size={canvasSize}
                   />
                   <div className="grid-stats">
                     <span className="stat-key">Grid</span>
@@ -210,8 +203,17 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid-empty">
-                  {phase === "processing" && <div className="spinner" />}
-                  {phase === "processing" && <span>Processing image…</span>}
+                  {phase === "processing" ? (
+                    <>
+                      <div className="spinner" />
+                      <span>Processing image…</span>
+                    </>
+                  ) : (
+                    <>
+                      <img src={emptyStateImg} className="empty-state-img" alt="" />
+                      <span className="empty-state-caption">Nothing here yet</span>
+                    </>
+                  )}
                 </div>
               )}
             </div>

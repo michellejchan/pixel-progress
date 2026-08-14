@@ -1,55 +1,95 @@
 :root {
-  /* ── Typography ─────────────────────────────────────────────────────────── */
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* ── Primitives: stroke scale ────────────────────────────────────────────── */
+  --stroke-1: 1px;
+  --stroke-2: 1.5px;
+  --stroke-3: 2px;
+  --stroke-4: 3px;
+
+  /* ── Primitives: space scale ─────────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-15: 60px;
+
+  /* ── Primitives: color ramp ──────────────────────────────────────────────── */
+  --gray-50:    #d4d4d4;
+  --gray-200:   #c9cdd4;
+  --gray-500:   #767676;
+  --gray-600:   #5e6073;
+  --gray-700:   #3a3d44;
+  --gray-800:   #3c3c3c;
+  --gray-900:   #181818;
+  --gray-950:   #131313;
+  --gray-1000:  #121212;
+
+  --white-a06:  rgba(255, 255, 255, 0.06);
+  --white-a12:  rgba(255, 255, 255, 0.12);
+  --white-a20:  rgba(255, 255, 255, 0.20);
+  --white-a22:  rgba(255, 255, 255, 0.22);
+
+  --blue-100:   #8ab4f8;
+  --blue-200:   #75A1F5;
+  --blue-a04:   rgba(117, 161, 245, 0.04);
+  --blue-a08:   rgba(117, 161, 245, 0.08);
+  --blue-a20:   rgba(117, 161, 245, 0.20);
+  --blue-a40:   rgba(117, 161, 245, 0.40);
+
+  --red-500:    #ff6b6b;
+  --red-a12:    rgba(198, 40, 40, 0.12);
+  --red-a35:    rgba(198, 40, 40, 0.35);
+
+  /* ── Semantic: typography ────────────────────────────────────────────────── */
+  --font-mono: 'Chivo Mono', monospace;
   --leading: 1.15;
 
-  --text-2xs: 9px;   /* metadata labels */
-  --text-xs:  12px;  /* secondary captions */
-  --text-sm:  13px;  /* ui labels, stats, legend */
-  --text-base: 16px; /* body, inputs, headings */
+  --text-xs:   10px;
+  --text-sm:   13px;
+  --text-base: 16px;
 
-  /* ── Color: backgrounds ─────────────────────────────────────────────────── */
-  --color-bg:      #1b1b1b;
-  --color-surface: #1b1c1b;
-  --color-nav:     #151515;
+  /* ── Semantic: stroke widths ─────────────────────────────────────────────── */
+  --stroke-subtle:   var(--stroke-1);
+  --stroke-ui:       var(--stroke-2);
+  --stroke-emphasis: var(--stroke-4);
+  --stroke-spinner:  var(--stroke-3);
 
-  /* ── Color: borders ─────────────────────────────────────────────────────── */
-  --color-border:       #2e2e2e;
-  --color-border-nav:   #2f2f2f;
-  --color-border-warm:  #786d6d;
-  --color-border-field: rgba(255, 255, 255, 0.2);
-  --color-border-grid:  #8c8787;
-  --color-divider:      rgba(255, 255, 255, 0.12);
+  /* ── Semantic: backgrounds ───────────────────────────────────────────────── */
+  --bg:              var(--gray-1000);
+  --bg-surface:      var(--gray-900);
+  --bg-nav:          var(--gray-950);
+  --bg-accent:       var(--blue-a04);
+  --bg-accent-hover: var(--blue-a08);
+  --bg-error:        var(--red-a12);
+  --bg-control:      var(--gray-800);
 
-  /* ── Color: text ────────────────────────────────────────────────────────── */
-  --color-text:       #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.6);
-  --color-text-dim:   rgba(255, 255, 255, 0.75);
-  --color-text-warm:  #e3dcdc;
-  --color-text-warm-muted: rgba(227, 220, 220, 0.75);
-  --color-text-on-surface: #f9f9f9;
+  /* ── Semantic: foregrounds ───────────────────────────────────────────────── */
+  --fg:               var(--gray-50);
+  --fg-muted:          rgba(202, 202, 202, 0.70);
+  --fg-dim:            rgba(202, 202, 202, 0.85);
+  --fg-surface:        var(--gray-50);
+  --fg-accent:         var(--blue-200);
+  --fg-accent-hover:   var(--blue-100);
+  --fg-accent-dim:     var(--blue-a20);
+  --fg-accent-control: var(--blue-200);
+  --fg-error:          var(--red-500);
 
-  /* ── Color: accent ──────────────────────────────────────────────────────── */
-  --color-accent:             #8aa4f7;
-  --color-accent-border:      #a7bbf9;
-  --color-accent-hover:       #9ab3f8;
-  --color-accent-thumb:       #859eef;
-  --color-accent-bg:          rgba(138, 164, 247, 0.04);
-  --color-accent-bg-active:   rgba(138, 164, 247, 0.08);
-  --color-accent-border-soft: rgba(138, 164, 247, 0.5);
-  --color-accent-dim:         rgba(138, 164, 247, 0.2);
+  /* ── Semantic: borders ───────────────────────────────────────────────────── */
+  --border:             var(--white-a06);
+  --border-nav:         var(--white-a06);
+  --border-muted:       var(--white-a12);
+  --border-field:       var(--white-a20);
+  --border-control:     var(--white-a22);
+  --border-grid:        var(--white-a22);
+  --border-accent:      var(--blue-200);
+  --border-accent-soft: var(--blue-a40);
+  --border-error:       var(--red-a35);
 
-  /* ── Color: interactive ─────────────────────────────────────────────────── */
-  --color-toggle-track: #3c3c3c;
-
-  /* ── Color: error ───────────────────────────────────────────────────────── */
-  --color-error:        #ff6b6b;
-  --color-error-bg:     rgba(198, 40, 40, 0.12);
-  --color-error-border: rgba(198, 40, 40, 0.35);
-
-  /* ── Layout ─────────────────────────────────────────────────────────────── */
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
   --nav-height:       57px;
   --nav-padding-x:    59px;
-  --layout-width:     750px;
-  --panel-left-width: 315px;
+  --layout-width:     900px;
+  --panel-left-width: calc(var(--layout-width) * 0.4);
 }

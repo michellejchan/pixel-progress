@@ -12,7 +12,7 @@ export function DifficultySlider({ value, onChange, disabled }: Props) {
         {[1, 2, 3, 4, 5, 6, 7].map((level) => (
           <button
             key={level}
-            className={`diff-btn ${level === value ? "active" : ""}`}
+            className={`diff-btn${level === value ? " active" : ""}`}
             onClick={() => onChange(level)}
             disabled={disabled}
           >

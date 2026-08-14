@@ -1,5 +1,17 @@
 import { useEffect, useRef } from "react";
 import type { PaletteColor, PixelCell } from "../types";
+import textureUrl from "../assets/colored_pencil_texture.jpg";
+
+let cachedTexture: HTMLImageElement | null = null;
+
+function loadTexture(): Promise<HTMLImageElement> {
+  if (cachedTexture) return Promise.resolve(cachedTexture);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => { cachedTexture = img; resolve(img); };
+    img.src = textureUrl;
+  });
+}
 
 interface Props {
   n: number;
@@ -48,6 +60,16 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
       ctx.lineWidth = 0.5;
       ctx.strokeRect(x, y, cellPx, cellPx);
     }
+
+    // Pencil texture overlay — greyscale so it only modulates luminance
+    loadTexture().then((tex) => {
+      ctx.save();
+      ctx.filter = "grayscale(1)";
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(tex, 0, 0, size, size);
+      ctx.restore();
+    });
   }, [cells, paletteColors, view, n, size]);
 
   return (

@@ -165,7 +165,7 @@ export async function quantizeColors(
   paletteSize: number
 ): Promise<string[]> {
   const pixels = await getPixels(downsampledDataUrl, n);
-  const colorMap = quantize(pixels, paletteSize);
+  const colorMap = quantize(pixels, paletteSize + 1);
   if (!colorMap) return [];
   const palette: RGB[] = colorMap.palette();
   return palette.map(([r, g, b]) => chroma(r, g, b).hex());
