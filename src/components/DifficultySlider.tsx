@@ -1,5 +1,5 @@
 interface Props {
-  value: number;
+  value: number | null;
   onChange: (v: number) => void;
   disabled?: boolean;
 }

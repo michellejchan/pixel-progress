@@ -43,7 +43,7 @@ export default function App() {
   }
 
   const [phase, setPhase] = useState<AppPhase>("idle");
-  const [difficulty, setDifficulty] = useState<number>(3);
+  const [difficulty, setDifficulty] = useState<number | null>(null);
   const [paletteColors, setPaletteColors] = useState<PaletteColor[]>([]);
   const [cells, setCells] = useState<PixelCell[]>([]);
   const [grid, setGrid] = useState<GridType | null>(null);
@@ -101,7 +101,9 @@ export default function App() {
     try {
       const url = await loadImageDataUrl(file);
       rawDataUrlRef.current = url;
-      await runProcessing(url, difficulty);
+      if (difficulty !== null) {
+        await runProcessing(url, difficulty);
+      }
     } catch (e) {
       console.error(e);
       setError("Could not load image.");
@@ -120,7 +122,7 @@ export default function App() {
     const url = generatePdf(grid, cells, paletteColors, title);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pixel-progress-level${difficulty}.pdf`;
+    a.download = `pixel-progress-level${difficulty ?? "custom"}.pdf`;
     a.click();
   }, [grid, cells, paletteColors, title, difficulty]);
 
@@ -227,7 +229,7 @@ export default function App() {
                     <span className="stat-val">{total}</span>
                     <div className="stat-divider" />
                     <span className="stat-key">Time</span>
-                    <span className="stat-val">{DIFFICULTY_TIME[difficulty]}</span>
+                    <span className="stat-val">{difficulty !== null ? DIFFICULTY_TIME[difficulty] : "—"}</span>
                   </div>
                 </div>
               ) : (

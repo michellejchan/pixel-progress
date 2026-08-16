@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PixelLoader, PIXEL_LOADER_TOTAL_MS } from "./PixelLoader";
 
 interface Props {
   onImage: (file: File) => void;
@@ -10,18 +11,53 @@ interface Props {
 export function ImageUpload({ onImage, disabled, thumbnailUrl, fileName }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [animDone, setAnimDone] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [localFileName, setLocalFileName] = useState<string>("");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (animDone) setUploading(false);
+  }, [animDone]);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (localUrlRef.current) URL.revokeObjectURL(localUrlRef.current);
+  }, []);
 
   function handleFile(file: File | undefined) {
     if (!file) return;
     const ok = ["image/jpeg", "image/png", "image/webp", "image/heic"].includes(file.type) ||
       file.name.toLowerCase().endsWith(".heic");
     if (!ok) return;
+
+    if (localUrlRef.current) URL.revokeObjectURL(localUrlRef.current);
+    const url = URL.createObjectURL(file);
+    localUrlRef.current = url;
+    setLocalPreviewUrl(url);
+    setLocalFileName(file.name);
+
+    setAnimDone(false);
+    setUploading(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      setAnimDone(true);
+    }, PIXEL_LOADER_TOTAL_MS);
+
     onImage(file);
   }
 
+  const previewUrl = thumbnailUrl || localPreviewUrl;
+  const previewName = fileName || localFileName;
+  const showTrail = uploading;
+  const showPreview = !uploading && !!previewUrl;
+
   return (
     <div
-      className={`upload-zone ${dragging ? "dragging" : ""} ${disabled ? "disabled" : ""} ${thumbnailUrl ? "has-preview" : ""}`}
+      className={`upload-zone${dragging ? " dragging" : ""}${disabled ? " disabled" : ""}${showPreview ? " has-preview" : ""}`}
       onClick={() => !disabled && inputRef.current?.click()}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
@@ -38,11 +74,14 @@ export function ImageUpload({ onImage, disabled, thumbnailUrl, fileName }: Props
         style={{ display: "none" }}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      {thumbnailUrl ? (
+
+      {showTrail ? (
+        <PixelLoader label="Uploading…" />
+      ) : showPreview ? (
         <div className="upload-preview">
           <div className="upload-thumbnail-wrap">
-            <img className="upload-thumbnail" src={thumbnailUrl} alt="Preview" />
-            {fileName && <div className="upload-filename-bar">{fileName}</div>}
+            <img className="upload-thumbnail" src={previewUrl!} alt="Preview" />
+            {previewName && <div className="upload-filename-bar">{previewName}</div>}
             <div className="upload-thumbnail-overlay">
               <span className="upload-thumbnail-label">Upload new image</span>
             </div>

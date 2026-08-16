@@ -283,12 +283,12 @@
 
 .upload-zone:hover:not(.disabled) {
   background-color: var(--bg-accent);
-  border-color: rgba(117, 161, 245, 0.5);
+  border-color: var(--border-accent-soft);
 }
 
 .upload-zone.dragging {
   background-color: var(--bg-accent-hover);
-  border-color: rgba(117, 161, 245, 0.5);
+  border-color: var(--border-accent-soft);
 }
 
 .upload-zone.disabled {
@@ -622,16 +622,39 @@
   letter-spacing: 0.08em;
 }
 
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: var(--stroke-spinner) solid var(--fg-accent-dim);
-  border-top-color: var(--fg-accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.pixel-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.pixel-loader-track {
+  display: flex;
+  gap: 3px;
+}
+
+.pixel-loader-sq {
+  width: 9px;
+  height: 9px;
+  background: var(--fg-accent);
+  opacity: 0.15;
+  animation: pixel-trail 1.2s ease-in-out 1;
+  animation-fill-mode: both;
+}
+
+.pixel-loader-label {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@keyframes pixel-trail {
+  0%, 100% { opacity: 0.15; box-shadow: none; }
+  8%        { opacity: 1;    box-shadow: 0 0 8px var(--fg-accent); }
+  40%       { opacity: 0.28; box-shadow: none; }
+}
 
 .error-banner {
   background: var(--bg-error);
