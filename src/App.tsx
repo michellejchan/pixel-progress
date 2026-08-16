@@ -3,6 +3,8 @@ import { ImageUpload } from "./components/ImageUpload";
 import { DifficultySlider } from "./components/DifficultySlider";
 import { PixelGrid } from "./components/PixelGrid";
 import { ColorLegend } from "./components/ColorLegend";
+import { TopNav } from "./components/TopNav";
+import type { Session } from "./components/TopNav";
 import { runPipeline, loadImageDataUrl } from "./lib/pipeline";
 import { generatePdf } from "./lib/pdf";
 import { DIFFICULTY_GRID } from "./types";
@@ -22,20 +24,34 @@ const DIFFICULTY_TIME: Record<number, string> = {
   7: "~13 WKS",
 };
 
-const today = new Date().toLocaleDateString("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
 export default function App() {
+  const [sessions, setSessions] = useState<Session[]>([
+    { id: crypto.randomUUID(), name: "New session" },
+  ]);
+  const [activeSessionIdx, setActiveSessionIdx] = useState(0);
+
+  function handleCycle(direction: -1 | 1) {
+    setActiveSessionIdx(
+      (i) => (i + direction + sessions.length) % sessions.length
+    );
+  }
+
+  function handleRename(index: number, name: string) {
+    setSessions((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, name } : s))
+    );
+  }
+
   const [phase, setPhase] = useState<AppPhase>("idle");
-  const [difficulty, setDifficulty] = useState(3);
+  const [difficulty, setDifficulty] = useState<number>(3);
   const [paletteColors, setPaletteColors] = useState<PaletteColor[]>([]);
   const [cells, setCells] = useState<PixelCell[]>([]);
   const [grid, setGrid] = useState<GridType | null>(null);
   const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [croppedDataUrl, setCroppedDataUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>("");
 
   const rawDataUrlRef = useRef<string | null>(null);
   const runIdRef = useRef(0);
@@ -67,6 +83,7 @@ export default function App() {
       setGrid(g);
       setPaletteColors(result.paletteColors);
       setCells(result.cells);
+      setCroppedDataUrl(result.croppedDataUrl);
       setPhase("ready");
     } catch (e) {
       console.error(e);
@@ -79,6 +96,8 @@ export default function App() {
 
   const handleImage = useCallback(async (file: File) => {
     setError(null);
+    setFileName(file.name);
+    setCroppedDataUrl(null);
     try {
       const url = await loadImageDataUrl(file);
       rawDataUrlRef.current = url;
@@ -105,7 +124,7 @@ export default function App() {
     a.click();
   }, [grid, cells, paletteColors, title, difficulty]);
 
-  const n = grid ? grid.n : DIFFICULTY_GRID[difficulty];
+  const n = grid?.n ?? 0;
   const total = n * n;
 
   const gridSectionRef = useRef<HTMLDivElement>(null);
@@ -124,12 +143,12 @@ export default function App() {
 
   return (
     <div className="app">
-      <nav className="app-nav">
-        <span className="nav-arrow">{">>"}</span>
-        <span className="nav-project">Pixel Project</span>
-        <span className="nav-sep">/</span>
-        <span className="nav-page">New session</span>
-      </nav>
+      <TopNav
+        sessions={sessions}
+        activeIndex={activeSessionIdx}
+        onCycle={handleCycle}
+        onRename={handleRename}
+      />
 
       <div className="app-body">
         <div className="panels">
@@ -138,12 +157,16 @@ export default function App() {
             <span className="panel-noise" aria-hidden="true" />
             <div className="form-section">
               <p className="section-heading">
-                {"> "}<span className="htxt">logistics</span>
+                {"> "}<span className="htxt">setup</span>
               </p>
 
               <div className="field">
-                <span className="field-label">reference</span>
-                <ImageUpload onImage={handleImage} disabled={phase === "processing"} />
+                <ImageUpload
+                  onImage={handleImage}
+                  disabled={phase === "processing"}
+                  thumbnailUrl={croppedDataUrl ?? undefined}
+                  fileName={fileName || undefined}
+                />
               </div>
 
               <div className="field">
@@ -158,7 +181,12 @@ export default function App() {
 
               <div className="field">
                 <span className="field-label">date</span>
-                <div className="field-value">{today}</div>
+                <input
+                  className="field-input"
+                  placeholder="—"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
               </div>
 
               <DifficultySlider
@@ -178,6 +206,7 @@ export default function App() {
           </aside>
 
           <div className="panel-right">
+            <span className="panel-noise" aria-hidden="true" />
             <div className="grid-section" ref={gridSectionRef}>
               {error && <div className="error-banner">{error}</div>}
 
@@ -223,7 +252,7 @@ export default function App() {
                 <div className="section-divider" />
                 <div className="legend-section">
                   <p className="section-heading">
-                    {"[] "}<span className="htxt">legend</span>
+                    {"> "}<span className="htxt">Color legend</span>
                   </p>
                   <ColorLegend paletteColors={paletteColors} />
                 </div>

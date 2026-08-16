@@ -7,7 +7,7 @@ interface Props {
 export function DifficultySlider({ value, onChange, disabled }: Props) {
   return (
     <div className="diff-section">
-      <span className="diff-label">difficulty scale</span>
+      <span className="diff-label">level</span>
       <div className="diff-grid">
         {[1, 2, 3, 4, 5, 6, 7].map((level) => (
           <button

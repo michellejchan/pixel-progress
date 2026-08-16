@@ -288,6 +288,7 @@ export function buildPaletteColors(
 
 export interface PipelineResult {
   downsampledDataUrl: string;
+  croppedDataUrl: string;
   paletteColors: PaletteColor[];
   cells: PixelCell[];
 }
@@ -320,5 +321,5 @@ export async function runPipeline(
   const rawCells = await mapPixelsToPalette(downsampled, n, paletteColors);
   const cells = rawCells.map((c) => ({ ...c, gridId }));
 
-  return { downsampledDataUrl: downsampled, paletteColors, cells };
+  return { downsampledDataUrl: downsampled, croppedDataUrl: cropped, paletteColors, cells };
 }
