@@ -3,6 +3,7 @@ import quantize from "quantize";
 import { nearestColorName } from "./colorNames";
 import type { PaletteColor, PixelCell } from "../types";
 import { DIFFICULTY_GRID, DIFFICULTY_PALETTE_SIZE } from "../types";
+import type { WorkerInput, WorkerOutput } from "./pipeline.worker";
 
 // ─── 01. Ingest & validate ────────────────────────────────────────────────────
 
@@ -302,24 +303,29 @@ export async function runPipeline(
   const n = DIFFICULTY_GRID[difficultyLevel];
   const paletteSize = DIFFICULTY_PALETTE_SIZE[difficultyLevel];
 
-  // Cap → boost → smart crop → downsample
+  // Canvas work stays on the main thread (requires DOM APIs)
   const capped = await capResolution(dataUrl);
   const boosted = await contrastBoost(capped);
   const cropped = await smartCropDataUrl(boosted, n);
   const downsampled = await downsampleToN(cropped, n);
+  const pixels = await getPixels(downsampled, n);
 
-  // Quantize
-  const originalHexes = await quantizeColors(downsampled, n, paletteSize);
-
-  // Harmony pass
-  const finalHexes = harmonyPass(originalHexes);
-
-  // Build palette colors
-  const paletteColors = buildPaletteColors(originalHexes, finalHexes, paletteId);
-
-  // Map pixels
-  const rawCells = await mapPixelsToPalette(downsampled, n, paletteColors);
-  const cells = rawCells.map((c) => ({ ...c, gridId }));
+  // Quantization + color mapping run in a worker so the main thread stays free
+  const { paletteColors, cells } = await new Promise<WorkerOutput>((resolve, reject) => {
+    const worker = new Worker(
+      new URL("./pipeline.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = ({ data }: MessageEvent<WorkerOutput>) => {
+      worker.terminate();
+      resolve(data);
+    };
+    worker.onerror = (e) => {
+      worker.terminate();
+      reject(new Error(e.message || "Worker failed"));
+    };
+    worker.postMessage({ pixels, n, paletteSize, paletteId, gridId } satisfies WorkerInput);
+  });
 
   return { downsampledDataUrl: downsampled, croppedDataUrl: cropped, paletteColors, cells };
 }

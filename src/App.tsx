@@ -2,11 +2,11 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ImageUpload } from "./components/ImageUpload";
 import { DifficultySlider } from "./components/DifficultySlider";
 import { PixelGrid } from "./components/PixelGrid";
+import { PixelScramble } from "./components/PixelScramble";
 import { ColorLegend } from "./components/ColorLegend";
 import { TopNav } from "./components/TopNav";
 import type { Session } from "./components/TopNav";
 import { runPipeline, loadImageDataUrl } from "./lib/pipeline";
-import { generatePdf } from "./lib/pdf";
 import { DIFFICULTY_GRID } from "./types";
 import type { PaletteColor, PixelCell, PixelGrid as GridType } from "./types";
 import emptyStateImg from "./assets/pixel_drink-removebg-preview.png";
@@ -53,8 +53,23 @@ export default function App() {
   const [croppedDataUrl, setCroppedDataUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
 
+  const [committed, setCommitted] = useState<{
+    grid: GridType;
+    cells: PixelCell[];
+    paletteColors: PaletteColor[];
+    difficulty: number;
+  } | null>(null);
+
+  const [showGlitch, setShowGlitch] = useState(false);
+  const glitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const rawDataUrlRef = useRef<string | null>(null);
   const runIdRef = useRef(0);
+  const hasCommittedRef = useRef(false);
+
+  useEffect(() => () => {
+    if (glitchTimerRef.current) clearTimeout(glitchTimerRef.current);
+  }, []);
 
   const runProcessing = useCallback(async (imageDataUrl: string, diff: number) => {
     const runId = ++runIdRef.current;
@@ -69,7 +84,10 @@ export default function App() {
     const gridId = crypto.randomUUID();
 
     try {
+      const start = performance.now();
       const result = await runPipeline(imageDataUrl, diff, paletteId, gridId);
+      const elapsed = performance.now() - start;
+      await new Promise(resolve => setTimeout(resolve, Math.max(elapsed / 8, 150)));
       if (runId !== runIdRef.current) return;
 
       const g: GridType = {
@@ -85,6 +103,9 @@ export default function App() {
       setCells(result.cells);
       setCroppedDataUrl(result.croppedDataUrl);
       setPhase("ready");
+      if (hasCommittedRef.current) {
+        setCommitted({ grid: g, cells: result.cells, paletteColors: result.paletteColors, difficulty: diff });
+      }
     } catch (e) {
       console.error(e);
       if (runId === runIdRef.current) {
@@ -117,17 +138,14 @@ export default function App() {
     }
   }, [runProcessing]);
 
-  const handleGeneratePdf = useCallback(() => {
-    if (!grid || cells.length === 0 || paletteColors.length === 0) return;
-    const url = generatePdf(grid, cells, paletteColors, title);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pixel-progress-level${difficulty ?? "custom"}.pdf`;
-    a.click();
-  }, [grid, cells, paletteColors, title, difficulty]);
-
-  const n = grid?.n ?? 0;
-  const total = n * n;
+  const handlePreview = useCallback(() => {
+    if (!grid || cells.length === 0 || paletteColors.length === 0 || difficulty === null) return;
+    hasCommittedRef.current = true;
+    setCommitted({ grid, cells, paletteColors, difficulty });
+    if (glitchTimerRef.current) clearTimeout(glitchTimerRef.current);
+    setShowGlitch(true);
+    glitchTimerRef.current = setTimeout(() => setShowGlitch(false), 800);
+  }, [grid, cells, paletteColors, difficulty]);
 
   const gridSectionRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState(360);
@@ -165,7 +183,6 @@ export default function App() {
               <div className="field">
                 <ImageUpload
                   onImage={handleImage}
-                  disabled={phase === "processing"}
                   thumbnailUrl={croppedDataUrl ?? undefined}
                   fileName={fileName || undefined}
                 />
@@ -194,16 +211,15 @@ export default function App() {
               <DifficultySlider
                 value={difficulty}
                 onChange={handleDifficultyChange}
-                disabled={phase === "processing"}
               />
             </div>
 
             <button
               className="btn-generate"
-              onClick={handleGeneratePdf}
+              onClick={handlePreview}
               disabled={phase !== "ready"}
             >
-              Preview
+              {phase === "processing" ? "Processing…" : "Preview"}
             </button>
           </aside>
 
@@ -212,51 +228,49 @@ export default function App() {
             <div className="grid-section" ref={gridSectionRef}>
               {error && <div className="error-banner">{error}</div>}
 
-              {phase === "ready" && grid ? (
+              {committed ? (
                 <div className="grid-canvas-wrap">
-                  <PixelGrid
-                    n={grid.n}
-                    cells={cells}
-                    paletteColors={paletteColors}
-                    view="color"
-                    size={canvasSize}
-                  />
+                  <div className="grid-canvas-container">
+                    <PixelGrid
+                      n={committed.grid.n}
+                      cells={committed.cells}
+                      paletteColors={committed.paletteColors}
+                      view="color"
+                      size={canvasSize}
+                    />
+                    {(phase === "processing" || showGlitch) && (
+                      <div className="grid-scramble-overlay">
+                        <PixelScramble size={canvasSize} n={committed.grid.n} />
+                      </div>
+                    )}
+                  </div>
                   <div className="grid-stats">
                     <span className="stat-key">Grid</span>
-                    <span className="stat-val">{n}×{n}</span>
+                    <span className="stat-val">{committed.grid.n}×{committed.grid.n}</span>
                     <div className="stat-divider" />
                     <span className="stat-key">Sessions</span>
-                    <span className="stat-val">{total}</span>
+                    <span className="stat-val">{committed.grid.n * committed.grid.n}</span>
                     <div className="stat-divider" />
                     <span className="stat-key">Time</span>
-                    <span className="stat-val">{difficulty !== null ? DIFFICULTY_TIME[difficulty] : "—"}</span>
+                    <span className="stat-val">{DIFFICULTY_TIME[committed.difficulty]}</span>
                   </div>
                 </div>
               ) : (
                 <div className="grid-empty">
-                  {phase === "processing" ? (
-                    <>
-                      <div className="spinner" />
-                      <span>Processing image…</span>
-                    </>
-                  ) : (
-                    <>
-                      <img src={emptyStateImg} className="empty-state-img" alt="" />
-                      <span className="empty-state-caption">Nothing here yet</span>
-                    </>
-                  )}
+                  <img src={emptyStateImg} className="empty-state-img" alt="" />
+                  <span className="empty-state-caption">Nothing here yet</span>
                 </div>
               )}
             </div>
 
-            {phase === "ready" && paletteColors.length > 0 && (
+            {committed && committed.paletteColors.length > 0 && (
               <>
                 <div className="section-divider" />
                 <div className="legend-section">
                   <p className="section-heading">
                     {"> "}<span className="htxt">Color legend</span>
                   </p>
-                  <ColorLegend paletteColors={paletteColors} />
+                  <ColorLegend paletteColors={committed.paletteColors} />
                 </div>
               </>
             )}

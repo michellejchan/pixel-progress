@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { PaletteColor, PixelCell } from "../types";
 import textureUrl from "../assets/colored_pencil_texture.jpg";
+import { CANVAS_GRID_LINE, CANVAS_LABEL_TEXT } from "../lib/colors";
 
 let cachedTexture: HTMLImageElement | null = null;
 
@@ -24,7 +25,8 @@ interface Props {
 export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
+  // Runs before browser paint — eliminates flicker when cells or size change
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || cells.length === 0) return;
     const ctx = canvas.getContext("2d")!;
@@ -49,20 +51,34 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
         ctx.fillRect(x, y, cellPx, cellPx);
         const fontSize = Math.max(7, Math.min(14, cellPx * 0.45));
         ctx.font = `bold ${fontSize}px 'IBM Plex Mono', monospace`;
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fillStyle = CANVAS_LABEL_TEXT;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(cell.colorCode), x + cellPx / 2, y + cellPx / 2);
       }
 
-      // Grid lines
-      ctx.strokeStyle = "rgba(140,135,135,0.35)";
+      ctx.strokeStyle = CANVAS_GRID_LINE;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(x, y, cellPx, cellPx);
     }
 
-    // Pencil texture overlay — greyscale so it only modulates luminance
+    // Apply texture synchronously if already cached — no extra paint needed
+    if (cachedTexture) {
+      ctx.save();
+      ctx.filter = "grayscale(1)";
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(cachedTexture, 0, 0, size, size);
+      ctx.restore();
+    }
+  }, [cells, paletteColors, view, n, size]);
+
+  // First-load only: fetch texture then apply it; subsequent renders use the cache above
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || cells.length === 0 || cachedTexture) return;
     loadTexture().then((tex) => {
+      const ctx = canvas.getContext("2d")!;
       ctx.save();
       ctx.filter = "grayscale(1)";
       ctx.globalCompositeOperation = "multiply";
@@ -70,7 +86,7 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
       ctx.drawImage(tex, 0, 0, size, size);
       ctx.restore();
     });
-  }, [cells, paletteColors, view, n, size]);
+  }, [cells, size]);
 
   return (
     <canvas

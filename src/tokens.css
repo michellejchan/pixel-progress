@@ -27,16 +27,18 @@
   --gray-1000:  #121212;
 
   --white-a06:  rgba(255, 255, 255, 0.06);
+  --white-a07:  rgba(255, 255, 255, 0.07);
   --white-a12:  rgba(255, 255, 255, 0.12);
   --white-a20:  rgba(255, 255, 255, 0.20);
   --white-a22:  rgba(255, 255, 255, 0.22);
+  --white-a30:  rgba(255, 255, 255, 0.30);
 
-  --blue-100:   #F7FFA3;
-  --blue-200:   #EFFE71;
-  --blue-a04:   rgba(239, 254, 113, 0.04);
-  --blue-a08:   rgba(239, 254, 113, 0.08);
-  --blue-a20:   rgba(239, 254, 113, 0.20);
-  --blue-a40:   rgba(239, 254, 113, 0.40);
+  --yellow-100:   #F7FFA3;
+  --yellow-200:   #EFFE71;
+  --yellow-a04:   rgba(239, 254, 113, 0.04);
+  --yellow-a08:   rgba(239, 254, 113, 0.08);
+  --yellow-a20:   rgba(239, 254, 113, 0.20);
+  --yellow-a40:   rgba(239, 254, 113, 0.40);
 
   --red-500:    #ff6b6b;
   --red-a12:    rgba(198, 40, 40, 0.12);
@@ -60,20 +62,19 @@
   --bg:              var(--gray-1000);
   --bg-surface:      var(--gray-900);
   --bg-nav:          var(--gray-950);
-  --bg-accent:       var(--blue-a04);
-  --bg-accent-hover: var(--blue-a08);
+  --bg-accent:       var(--yellow-a04);
+  --bg-accent-hover: var(--yellow-a08);
   --bg-error:        var(--red-a12);
   --bg-control:      var(--gray-800);
+  --bg-overlay:      rgba(0, 0, 0, 0.45);
 
   /* ── Semantic: foregrounds ───────────────────────────────────────────────── */
   --fg:               var(--gray-50);
   --fg-muted:          rgba(202, 202, 202, 0.70);
   --fg-dim:            rgba(202, 202, 202, 0.85);
-  --fg-surface:        var(--gray-50);
-  --fg-accent:         var(--blue-200);
-  --fg-accent-hover:   var(--blue-100);
-  --fg-accent-dim:     var(--blue-a20);
-  --fg-accent-control: var(--blue-200);
+  --fg-accent:         var(--yellow-200);
+  --fg-accent-hover:   var(--yellow-100);
+  --fg-accent-dim:     var(--yellow-a20);
   --fg-error:          var(--red-500);
 
   /* ── Semantic: borders ───────────────────────────────────────────────────── */
@@ -83,8 +84,8 @@
   --border-field:       var(--white-a20);
   --border-control:     var(--white-a22);
   --border-grid:        var(--white-a22);
-  --border-accent:      var(--blue-200);
-  --border-accent-soft: var(--blue-a40);
+  --border-accent:      var(--yellow-200);
+  --border-accent-soft: var(--yellow-a40);
   --border-error:       var(--red-a35);
 
   /* ── Layout ──────────────────────────────────────────────────────────────── */
