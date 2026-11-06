@@ -1,78 +1,71 @@
 import { useLayoutEffect, useRef } from "react";
-import { CANVAS_ACCENT, CANVAS_ACCENT_MUTED, CANVAS_CELL_OFF, CANVAS_SCRAMBLE_GRID } from "../lib/colors";
+import { styleGridCanvas } from "../lib/canvasFit";
+import type { ScrambleMessage } from "../lib/scramble.worker";
 
-const TICK_MS = 60;        // throttled ticks, not per-frame
-const ACTIVE_FRACTION = 0.2; // ~20% of cells lit at any moment
+// Length of the speed-up burst that plays once the result is ready
+export const SCRAMBLE_FINISH_MS = 500;
 
-function randomActiveColor(): string {
-  // 15% full accent, 85% muted — sparse bright hits among softer glow
-  return Math.random() < 0.15 ? CANVAS_ACCENT : CANVAS_ACCENT_MUTED;
+// Booted once at startup and kept warm, so the scramble starts on its very first frame
+const worker = new Worker(
+  new URL("../lib/scramble.worker.ts", import.meta.url),
+  { type: "module" },
+);
+
+function send(msg: ScrambleMessage, transfer: Transferable[] = []) {
+  worker.postMessage(msg, transfer);
 }
 
 interface Props {
   size: number;
   n?: number; // grid dimension
+  active: boolean; // animating; the canvas stays mounted either way
+  finishing?: boolean; // speed up, then call onDone
+  onDone?: () => void;
 }
 
-export function PixelScramble({ size, n = 20 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export function PixelScramble({ size, n = 20, active, finishing = false, onDone }: Props) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onDoneRef = useRef(onDone);
+  useLayoutEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  // A canvas can only be handed to a worker once, so it's created here rather than in JSX.
+  // It lives as long as the component; size changes are messages, not remounts.
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "pixel-canvas";
+    host.appendChild(canvas);
+    canvasRef.current = canvas;
+    const offscreen = canvas.transferControlToOffscreen();
+    send({ type: "canvas", canvas: offscreen }, [offscreen]);
+    worker.onmessage = () => onDoneRef.current?.();
+
+    return () => {
+      send({ type: "active", active: false });
+      worker.onmessage = null;
+      canvas.remove();
+      canvasRef.current = null;
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const cellPx = size / n;
-    const total = n * n;
-    const activeCount = Math.round(total * ACTIVE_FRACTION);
-
-    // All cells start dark
-    const cells = new Array<string>(total).fill(CANVAS_CELL_OFF);
-
-    function draw() {
-      ctx.clearRect(0, 0, size, size);
-      for (let i = 0; i < total; i++) {
-        const row = Math.floor(i / n);
-        const col = i % n;
-        const x = col * cellPx;
-        const y = row * cellPx;
-        ctx.fillStyle = cells[i];
-        ctx.fillRect(x, y, cellPx, cellPx);
-        ctx.strokeStyle = CANVAS_SCRAMBLE_GRID;
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x, y, cellPx, cellPx);
-      }
-    }
-
-    // Fisher-Yates shuffle to pick a fresh random active set each tick
-    const indices = Array.from({ length: total }, (_, i) => i);
-    function pickActiveIndices(): number[] {
-      for (let i = total - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
-      }
-      return indices.slice(0, activeCount);
-    }
-
-    draw();
-
-    const id = setInterval(() => {
-      cells.fill(CANVAS_CELL_OFF);
-      for (const i of pickActiveIndices()) {
-        cells[i] = randomActiveColor();
-      }
-      draw();
-    }, TICK_MS);
-
-    return () => clearInterval(id);
+    const { cellPx } = styleGridCanvas(canvas, size, n);
+    send({ type: "resize", n, cellPx });
   }, [size, n]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      className="pixel-canvas"
-      style={{ width: size, height: size }}
-    />
-  );
+  useLayoutEffect(() => {
+    send({ type: "active", active });
+  }, [active]);
+
+  useLayoutEffect(() => {
+    send({ type: "finish", finishing, durationMs: SCRAMBLE_FINISH_MS });
+  }, [finishing]);
+
+  return <div ref={hostRef} />;
 }

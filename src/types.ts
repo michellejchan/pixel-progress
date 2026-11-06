@@ -1,12 +1,14 @@
-// Difficulty level → palette size (scales with grid to balance fidelity vs. legend legibility)
+// Difficulty level → maximum palette size, background included. Kept small on purpose:
+// most people own a basic pencil/marker set, not ten shades of green. The pipeline can
+// end up with fewer if colours are too similar to be worth separating.
 export const DIFFICULTY_PALETTE_SIZE: Record<number, number> = {
-  1: 6,
-  2: 9,
-  3: 9,
-  4: 12,
-  5: 15,
-  6: 18,
-  7: 18,
+  1: 3,
+  2: 4,
+  3: 5,
+  4: 6,
+  5: 7,
+  6: 8,
+  7: 10,
 };
 
 // Difficulty level → grid dimension mapping
@@ -55,7 +57,7 @@ export interface ReferenceImage {
 export interface ColorPalette {
   id: string;
   projectId: string;
-  paletteSize: number; // scales with difficulty: 6/9/9/12/15/18/18
+  paletteSize: number; // max colours, scales with difficulty: 3/4/5/6/7/8/10
   createdAt: string;
   harmonyPassApplied: boolean;
 }

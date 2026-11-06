@@ -11,7 +11,7 @@ export function ColorLegend({ paletteColors }: Props) {
       {paletteColors.map((pc) => (
         <div key={pc.id} className="legend-row">
           <span className="legend-swatch" style={{ background: pc.finalHex }} />
-          <span className="legend-code">{pc.code}</span>
+          <span className="legend-code">{pc.code}:</span>
           <span className="legend-name">{pc.label}</span>
         </div>
       ))}

@@ -9,8 +9,9 @@ export function generatePdf(
   grid: PixelGrid,
   cells: PixelCell[],
   paletteColors: PaletteColor[],
-  title: string
-): string {
+  title: string,
+  date: string
+): void {
   const doc = new jsPDF({ unit: "mm", format: "letter", orientation: "portrait" });
   const n = grid.n;
 
@@ -22,12 +23,12 @@ export function generatePdf(
   doc.text("Title:", MARGIN, cursorY);
   doc.setFont("helvetica", "normal");
   const titleText = title.trim() || "_________________________________";
-  doc.text(titleText, MARGIN + 14, cursorY);
+  doc.text(doc.splitTextToSize(titleText, PAGE_W_MM / 2 - MARGIN - 18)[0], MARGIN + 14, cursorY);
 
   doc.setFont("helvetica", "bold");
   doc.text("Date:", PAGE_W_MM / 2 + 2, cursorY);
   doc.setFont("helvetica", "normal");
-  doc.text("__________________", PAGE_W_MM / 2 + 16, cursorY);
+  doc.text(date.trim() || "__________________", PAGE_W_MM / 2 + 16, cursorY);
 
   cursorY += 6;
   doc.setDrawColor(180);
@@ -47,32 +48,24 @@ export function generatePdf(
   const colorMap: Record<string, PaletteColor> = {};
   for (const pc of paletteColors) colorMap[pc.id] = pc;
 
-  // Draw cells
-  doc.setFontSize(Math.max(4, Math.min(6, cellSize * 0.45)));
+  // Draw cells — numbers scale with the cell (mm → pt is ×2.83), capped so big grids stay legible
+  doc.setFontSize(Math.max(4, Math.min(14, cellSize * 2.83 * 0.4)));
   for (const cell of cells) {
     const pc = colorMap[cell.paletteColorId];
     if (!pc) continue;
     const x = gridX + cell.col * cellSize;
     const y = gridY + cell.row * cellSize;
 
-    // Fill with a very light tint of the color (30% opacity approx via white mix)
-    const [r, g, b] = hexToRgb(pc.finalHex);
-    // Mix with white at 60% to keep numbers legible
-    const fr = Math.round(r * 0.35 + 255 * 0.65);
-    const fg = Math.round(g * 0.35 + 255 * 0.65);
-    const fb = Math.round(b * 0.35 + 255 * 0.65);
-    doc.setFillColor(fr, fg, fb);
-    doc.rect(x, y, cellSize, cellSize, "F");
-
-    // Border
+    // Cells stay blank so the worksheet can be coloured in; only the border and number print
     doc.setDrawColor(140);
     doc.setLineWidth(0.1);
     doc.rect(x, y, cellSize, cellSize, "S");
 
     // Code number centered
     doc.setTextColor(40);
-    doc.text(String(cell.colorCode), x + cellSize / 2, y + cellSize / 2 + 0.8, {
+    doc.text(String(cell.colorCode), x + cellSize / 2, y + cellSize / 2, {
       align: "center",
+      baseline: "middle",
     });
   }
 
@@ -162,7 +155,8 @@ export function generatePdf(
     }
   }
 
-  return doc.output("bloburl") as unknown as string;
+  const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  doc.save(`${slug || "pixel-progress"}-worksheet.pdf`);
 }
 
 function hexToRgb(hex: string): [number, number, number] {

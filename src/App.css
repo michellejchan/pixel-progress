@@ -425,7 +425,7 @@
   background-size: 8px 2px, 8px 2px, 2px 8px, 2px 8px;
   background-position: 0 0, 0 100%, 0 0, 100% 0;
   background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
-  padding: 4px 4px;
+  padding: 0;
   gap: 2px;
   margin-block: 4px;
 }
@@ -448,10 +448,11 @@
 }
 
 .diff-btn.active {
-  border-color: var(--border-accent-soft);
   color: var(--fg-accent);
   background: var(--fg-accent-dim);
-
+  /* Inset outline lands exactly on the dotted line (1.5px stroke centred 1px in) */
+  outline: var(--stroke-ui) solid var(--border-accent-soft);
+  outline-offset: -1.75px;
 }
 
 .diff-btn:hover:not(.active):not(:disabled) {
@@ -520,45 +521,40 @@
   justify-content: space-between;
 }
 
-.view-toggle-wrap {
+/* Color / Numbers segmented switch: outlined track, active segment overlaps its edge */
+.view-toggle {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  border: var(--stroke-subtle) solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
-.toggle-track {
-  width: 40px;
-  height: 21px;
-  background: var(--bg-control);
-  border-radius: 10px;
-  position: relative;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.toggle-thumb {
-  position: absolute;
-  width: 20px;
-  height: 15px;
-  background: var(--fg-accent);
-  border-radius: 7px;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  pointer-events: none;
-}
-
-.toggle-track.on .toggle-thumb {
-  transform: translateX(14px);
-}
-
-.toggle-label {
+.view-toggle-btn {
+  height: 28px;
+  margin: -1px;
+  padding: 0 10px;
+  border: var(--stroke-subtle) solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.view-toggle-btn + .view-toggle-btn {
+  margin-left: 0;
+}
+
+.view-toggle-btn.active {
+  position: relative;
+  border-color: var(--border-accent-soft);
+  color: var(--fg-accent);
+  background: var(--fg-accent-dim);
+}
+
+.view-toggle-btn:hover:not(.active) {
   color: var(--fg);
-  line-height: var(--leading);
-  white-space: nowrap;
 }
 
 .grid-canvas-wrap {
@@ -576,6 +572,19 @@
 .grid-scramble-overlay {
   position: absolute;
   inset: 0;
+}
+
+.grid-scramble-overlay.standalone {
+  position: static;
+}
+
+.grid-scramble-overlay.idle {
+  visibility: hidden;
+}
+
+/* Until the worker's first frame lands, show an empty board rather than the stale grid underneath */
+.grid-scramble-overlay .pixel-canvas {
+  background: var(--bg-surface);
 }
 
 .pixel-canvas {
@@ -619,12 +628,22 @@
   font-size: var(--text-sm);
 }
 
-.empty-state-img {
-  width: 50%;
-  height: auto;
-  object-fit: contain;
-  opacity: 0.9;
+.koi-pond {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--fg-muted);
+  white-space: pre;
+  user-select: none;
 }
+
+.koi-o { color: #e8431a; }
+.koi-c { color: #ead2b8; }
+.koi-k { color: #8c8c8c; }
+.koi-f { color: rgba(234, 210, 184, 0.55); }
+.koi-e { color: var(--bg); }
+.koi-w { color: rgba(202, 202, 202, 0.18); }
 
 .empty-state-caption {
   font-size: var(--text-sm);
@@ -697,15 +716,16 @@
   z-index: 1;
 }
 
+/* Column count follows the panel width instead of squeezing names into 3 fixed columns */
 .legend-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px 10px;
 }
 
 .legend-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 11px;
   min-width: 0;
 }
@@ -722,7 +742,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: url('/src/assets/colored_pencil_texture.jpg') center / cover;
+  /* Small copy: the 8000px original took ~1s to decode on the main thread each time new swatches painted */
+  background: url('./assets/colored_pencil_texture_1024.jpg') center / cover;
   filter: grayscale(1);
   mix-blend-mode: multiply;
   opacity: 0.55;
@@ -732,18 +753,23 @@
 .legend-code {
   font-size: var(--text-sm);
   color: var(--fg);
+  opacity: 0.75;
   text-transform: uppercase;
   white-space: nowrap;
   line-height: var(--leading);
   flex-shrink: 0;
 }
 
+/* Wraps to a second line rather than truncating */
 .legend-name {
   font-size: var(--text-sm);
   color: var(--fg);
   text-transform: capitalize;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: var(--leading);
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }

@@ -1,18 +1,38 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PaletteColor, PixelCell } from "../types";
-import textureUrl from "../assets/colored_pencil_texture.jpg";
-import { CANVAS_GRID_LINE, CANVAS_LABEL_TEXT } from "../lib/colors";
+import textureUrl from "../assets/colored_pencil_texture_1024.jpg";
+import { CANVAS_CELL_OFF, CANVAS_GRID_LINE, CANVAS_LABEL_TEXT } from "../lib/colors";
+import { fitGridCanvas, strokeCell } from "../lib/canvasFit";
 
-let cachedTexture: HTMLImageElement | null = null;
+// The texture is a 1024px copy of the 8000×5333 original — plenty for the grid.
+// Decode it off the main thread and bake the grayscale filter in once,
+// so each grid redraw is a single cheap drawImage of a small canvas.
+const TEXTURE_PX = 1024;
 
-function loadTexture(): Promise<HTMLImageElement> {
-  if (cachedTexture) return Promise.resolve(cachedTexture);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => { cachedTexture = img; resolve(img); };
-    img.src = textureUrl;
-  });
-}
+let cachedTexture: HTMLCanvasElement | null = null;
+
+const texturePromise: Promise<HTMLCanvasElement | null> = (async () => {
+  try {
+    const blob = await fetch(textureUrl).then((r) => r.blob());
+    const bitmap = await createImageBitmap(blob, {
+      resizeWidth: TEXTURE_PX,
+      resizeHeight: TEXTURE_PX,
+      resizeQuality: "medium",
+    });
+    const baked = document.createElement("canvas");
+    baked.width = TEXTURE_PX;
+    baked.height = TEXTURE_PX;
+    const ctx = baked.getContext("2d")!;
+    ctx.filter = "grayscale(1)";
+    ctx.drawImage(bitmap, 0, 0, TEXTURE_PX, TEXTURE_PX);
+    bitmap.close();
+    cachedTexture = baked;
+    return baked;
+  } catch (e) {
+    console.error("Texture failed to load", e);
+    return null;
+  }
+})();
 
 interface Props {
   n: number;
@@ -24,18 +44,27 @@ interface Props {
 
 export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [textureReady, setTextureReady] = useState(cachedTexture !== null);
+
+  // Texture preloads at app start; if it isn't ready yet, redraw once when it lands
+  useEffect(() => {
+    if (textureReady) return;
+    let cancelled = false;
+    texturePromise.then((tex) => { if (tex && !cancelled) setTextureReady(true); });
+    return () => { cancelled = true; };
+  }, [textureReady]);
 
   // Runs before browser paint — eliminates flicker when cells or size change
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || cells.length === 0) return;
-    const ctx = canvas.getContext("2d")!;
-    const cellPx = size / n;
+    const { ctx, cellPx, bitmapPx, dpr } = fitGridCanvas(canvas, size, n);
 
     const colorById: Record<string, PaletteColor> = {};
     for (const pc of paletteColors) colorById[pc.id] = pc;
 
-    ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, bitmapPx, bitmapPx);
+    ctx.strokeStyle = CANVAS_GRID_LINE;
 
     for (const cell of cells) {
       const pc = colorById[cell.paletteColorId];
@@ -47,9 +76,10 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
         ctx.fillStyle = pc.finalHex;
         ctx.fillRect(x, y, cellPx, cellPx);
       } else {
-        ctx.fillStyle = mixWithDark(pc.finalHex, 0.35);
+        // Blank worksheet view: empty cells with just the colour number
+        ctx.fillStyle = CANVAS_CELL_OFF;
         ctx.fillRect(x, y, cellPx, cellPx);
-        const fontSize = Math.max(7, Math.min(14, cellPx * 0.45));
+        const fontSize = Math.max(7 * dpr, Math.min(14 * dpr, cellPx * 0.45));
         ctx.font = `bold ${fontSize}px 'IBM Plex Mono', monospace`;
         ctx.fillStyle = CANVAS_LABEL_TEXT;
         ctx.textAlign = "center";
@@ -57,54 +87,17 @@ export function PixelGrid({ n, cells, paletteColors, view, size = 360 }: Props) 
         ctx.fillText(String(cell.colorCode), x + cellPx / 2, y + cellPx / 2);
       }
 
-      ctx.strokeStyle = CANVAS_GRID_LINE;
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(x, y, cellPx, cellPx);
+      strokeCell(ctx, x, y, cellPx);
     }
 
-    // Apply texture synchronously if already cached — no extra paint needed
     if (cachedTexture) {
       ctx.save();
-      ctx.filter = "grayscale(1)";
       ctx.globalCompositeOperation = "multiply";
       ctx.globalAlpha = 0.55;
-      ctx.drawImage(cachedTexture, 0, 0, size, size);
+      ctx.drawImage(cachedTexture, 0, 0, bitmapPx, bitmapPx);
       ctx.restore();
     }
-  }, [cells, paletteColors, view, n, size]);
+  }, [cells, paletteColors, view, n, size, textureReady]);
 
-  // First-load only: fetch texture then apply it; subsequent renders use the cache above
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || cells.length === 0 || cachedTexture) return;
-    loadTexture().then((tex) => {
-      const ctx = canvas.getContext("2d")!;
-      ctx.save();
-      ctx.filter = "grayscale(1)";
-      ctx.globalCompositeOperation = "multiply";
-      ctx.globalAlpha = 0.55;
-      ctx.drawImage(tex, 0, 0, size, size);
-      ctx.restore();
-    });
-  }, [cells, size]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      className="pixel-canvas"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
-function mixWithDark(hex: string, amount: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const mr = Math.round(r * amount + 27 * (1 - amount));
-  const mg = Math.round(g * amount + 27 * (1 - amount));
-  const mb = Math.round(b * amount + 27 * (1 - amount));
-  return `rgb(${mr},${mg},${mb})`;
+  return <canvas ref={canvasRef} className="pixel-canvas" />;
 }
